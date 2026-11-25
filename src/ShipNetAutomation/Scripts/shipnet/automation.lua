@@ -68,16 +68,36 @@ function Cycle:adoptPanelRaise(leverOn, now, enabled)
     if not self.transferUnconfirmed then self.status = enabled and "Raising net" or "Automation off" end
 end
 
+local function haulThreshold(capacity)
+    return math.max(0, capacity - HAUL_MARGIN_KG)
+end
+
+local function storageHaul(info)
+    if info.status == "unavailable" or info.space == nil then return "Waiting for storage", "standby" end
+    if info.space then return "Raising net", "active", "raise" end
+    return "Empty the cabinet", "standby"
+end
+
 local function fishingAction(self, net, cabinet, now, lowering)
     local weight, capacity = cargo.weight(net)
     if not weight or not capacity or capacity <= 0 then
         self.haulCheck = nil
         return "Waiting for fishing net", "standby"
     end
-    local threshold = math.max(0, capacity - HAUL_MARGIN_KG)
+    local storage
+    if not self.basic and not lowering and weight > 0 then
+        local freeKg = cargo.storageFreeWeight(net, cabinet)
+        if freeKg and freeKg > 0 and weight >= freeKg then
+            storage = cargo.inspect(net, cabinet)
+            if storage.status ~= "unavailable" and storage.space then return storageHaul(storage) end
+        end
+    end
+
+    local threshold = haulThreshold(capacity)
     if weight == 0 or weight < threshold then
         self.haulCheck = nil
         if lowering then return "Lowering net", "active" end
+        if storage then return storageHaul(storage) end
         if threshold == 0 then return "Waiting for catch", "standby" end
         return ("Waiting for %g kg"):format(threshold), "standby"
     end
@@ -93,15 +113,12 @@ local function fishingAction(self, net, cabinet, now, lowering)
         return "Confirming catch weight", "standby"
     end
     if self.basic then return "Raising net", "active", "raise" end
-    local info = cargo.inspect(net, cabinet)
-    if info.status == "unavailable" or info.space == nil then return "Waiting for storage", "standby" end
-    if info.space then return "Raising net", "active", "raise" end
-    return "Empty the cabinet", "standby"
+    if lowering then return "Lowering net", "active" end
+    return storageHaul(storage or cargo.inspect(net, cabinet))
 end
 
-local function lowerWhenReady(self, now, waitForStorage)
+local function lowerWhenReady(self, now)
     self.lowerAt = self.lowerAt or now + BEFORE_LOWER_SECONDS
-    if waitForStorage then return "Empty the cabinet", "standby" end
     if now < self.lowerAt then return "Waiting to lower net", "standby" end
     return "Lowering net", "active", "lower"
 end
@@ -134,15 +151,21 @@ local function nextAction(self, net, cabinet, now, lowering, enabled)
         if now < self.unloadAt then return "Waiting to unload catch", idle end
         return "Unloading catch", "active", "unload"
     end
-    if info.remaining > 0 and not self.manualRaise then
-        self.lowerAt = nil
-        return "Empty the cabinet", idle
-    end
     if not enabled then
         self.manualRaise = false
         return "Automation off", "off"
     end
-    return lowerWhenReady(self, now, not self.manualRaise and not info.space)
+    if info.remaining > 0 then
+        if info.capacity <= 0 then
+            self.lowerAt = nil
+            return "Waiting for fishing net", idle
+        end
+        if info.weight > 0 and info.weight >= haulThreshold(info.capacity) then
+            self.lowerAt = nil
+            return "Empty the cabinet", idle
+        end
+    end
+    return lowerWhenReady(self, now)
 end
 
 function Cycle:unload(cabinet, net, elapsed)

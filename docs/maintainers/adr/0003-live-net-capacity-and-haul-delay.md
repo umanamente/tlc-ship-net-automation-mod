@@ -2,6 +2,8 @@
 
 **Status** — Accepted. Shipped in v0.1.0.
 
+[ADR 0013](0013-advanced-hauls-for-cabinet-space.md) adds a separate cabinet-space trigger for Advanced. This decision covers the near-full trigger.
+
 ## Context
 
 A nominal 30 kg net could stop at about 29.9 kg, leaving an exact-full trigger waiting indefinitely. Net capacity may also change between saves or while playing, including through other mods. A fixed 29 kg trigger would reproduce the problem at different capacities. The delay gives the net a chance to keep catching and preserves the intended pacing.

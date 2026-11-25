@@ -163,9 +163,14 @@ local function count_within_weight(count, unitWeight, availableKg)
     return math.min(count, math.floor((availableKg + 1e-6) / unitWeight))
 end
 
-local function choose(src, dst, rows, targetRows, empty, paced)
+local function remainingWeight(inventory)
+    local freeKg = inventory:GetRemainingWeightSpace()
+    assert(type(freeKg) == "number" and math.abs(freeKg) < math.huge, "Unreadable cabinet weight")
+    return math.max(0, freeKg)
+end
+
+local function choose(src, dst, rows, targetRows, empty, paced, freeKg)
     local unresolved
-    local freeKg = math.max(0, dst:GetRemainingWeightSpace())
     for _,row in ipairs(rows) do
         if not valid(row.item) or not src:IsValidSlotIndex(row.slot) or not src:CanRemoveSlot(row.slot) then
             unresolved = true
@@ -209,6 +214,11 @@ function M.weight(net)
     return nil
 end
 
+function M.storageFreeWeight(net, cabinet)
+    local ok, freeKg = pcall(function() return remainingWeight(storage(net, cabinet)) end)
+    if ok then return freeKg end
+end
+
 local function inspect(net,cabinet,exact,paced)
     local src, drawer = source(net)
     local dst = storage(net,cabinet)
@@ -219,9 +229,10 @@ local function inspect(net,cabinet,exact,paced)
     local empty = math.tointeger(dst:GetNextEmptySlot())
     assert(empty, "Cabinet slot capacity unavailable")
     if empty >= 0 and (not dst:IsValidSlotIndex(empty) or dst:IsSlotOccupied(empty)) then empty = -1 end
-    local move, why = choose(src,dst,rows,targetRows,empty,paced)
+    local freeKg = remainingWeight(dst)
+    local move, why = choose(src,dst,rows,targetRows,empty,paced,freeKg)
     local space = move ~= nil
-    if remaining == 0 and dst:GetRemainingWeightSpace() > 0 then
+    if remaining == 0 and freeKg > 0 then
         space = empty >= 0
         for _,row in ipairs(targetRows) do
             if space then break end

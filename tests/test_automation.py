@@ -29,6 +29,10 @@ class AutomationFixture(unittest.TestCase):
             package.loaded["shipnet.automation_power"]={new=function(_,fixed) fixedDraw=fixed;return power end}
             package.loaded["shipnet.automation_cargo"]={
                 weight=function() return catch.weight,catch.capacity end,
+                storageFreeWeight=function()
+                    assert(not basicCheck, "Basic must never query cabinet weight")
+                    return catch.freeKg or 50
+                end,
                 inspect=function()
                     assert(not basicCheck, "Basic must never query cabinet storage")
                     return catch
@@ -37,6 +41,7 @@ class AutomationFixture(unittest.TestCase):
                 unload=function()
                     assert(charge and net.FullyRaised and catch.ready and catch.space)
                     catch.remaining=catch.remaining-1
+                    catch.weight=catch.remaining==0 and 0 or catch.weight-1.25
                     moved=moved+1
                     return {status="moved",remaining=catch.remaining,movedKg=1.25}
                 end,
@@ -69,6 +74,7 @@ class AdvancedHaulTests(AutomationFixture):
 
     def test_live_capacity_crosses_the_threshold_in_both_directions(self):
         self.lua.execute("""
+            catch.freeKg=500
             catch.weight=29;step(12)
             catch.capacity=300;step(20)
             assert(#commands==0 and cycle.status=="Waiting for 299 kg")
@@ -122,6 +128,7 @@ class AdvancedHaulTests(AutomationFixture):
 
     def test_reload_uses_saved_switch_live_limit_and_fresh_wait(self):
         self.lua.execute("""
+            catch.freeKg=500
             catch.weight=29;step(12)
             catch.capacity=300;loadCycle();step(20);assert(#commands==0)
             catch.weight=299;step(12)
@@ -237,11 +244,52 @@ class AutomationTest(AutomationFixture):
         self.lua.execute("""
             charge=false;catch.weight=30;step(20);assert(#commands==0)
             charge=true;step();deck();step(5);assert(moved==1)
-            catch.space=false;step(5);assert(moved==1 and #commands==1 and used[#used]=="standby")
+            catch.space=false;catch.weight=29;step(5);assert(moved==1 and #commands==1 and used[#used]=="standby")
             charge=false;catch.space=true;step(4);assert(moved==1 and #commands==1)
             charge=true;step(2);assert(catch.remaining==0)
-            catch.space=false;step(4);assert(#commands==1)
-            catch.space=true;step(3);assert(#commands==2 and commands[2]=="lower")
+            catch.space=false;step(3);assert(#commands==1)
+            step();assert(#commands==2 and commands[2]=="lower")
+        """)
+
+    def test_early_haul_requires_exact_or_greater_weight_a_fitting_item_and_power(self):
+        self.lua.execute("""
+            catch.capacity=300;catch.weight=49.875;catch.freeKg=50
+            step(20);assert(#commands==0)
+            catch.weight=50;catch.space=false
+            step();assert(#commands==0 and cycle.status=="Empty the cabinet")
+            catch.space=true;charge=false
+            step();assert(#commands==0)
+            catch.freeKg=0;catch.space=false;charge=true
+            step();assert(#commands==0)
+            catch.freeKg=50;catch.space=true
+            step();assert(#commands==1 and commands[1]=="raise")
+        """)
+
+    def test_automatic_haul_redeploys_with_remainder_and_does_not_repeat_at_full_cabinet(self):
+        self.lua.execute("""
+            catch.capacity=300;catch.weight=55;catch.freeKg=50
+            step();assert(#commands==1 and commands[1]=="raise")
+            deck()
+            catch.weight=5;catch.remaining=4;catch.space=false;catch.freeKg=0
+            step(4);assert(#commands==1 and moved==0)
+            step();assert(#commands==2 and commands[2]=="lower")
+            net.FullyRaised=false;net.NetDropped=true;switch.on=true;catch.ready=false
+            catch.weight=6;step(20)
+            assert(#commands==2 and catch.remaining==4 and cabinet.WinchAutomationEnabled)
+            catch.freeKg=5;catch.space=true
+            step();assert(#commands==3 and commands[3]=="raise")
+        """)
+
+    def test_raised_blocked_net_uses_live_capacity_and_rechecks_before_lowering(self):
+        self.lua.execute("""
+            deck();catch.capacity=300;catch.weight=299;catch.space=false;catch.freeKg=0
+            step(12);assert(#commands==0 and cycle.status=="Empty the cabinet")
+            catch.capacity=310;step(3);assert(#commands==0)
+            catch.space=true;catch.freeKg=10;step()
+            assert(#commands==0 and moved==1)
+            catch.space=false;catch.freeKg=0;charge=false
+            step(8);assert(#commands==0)
+            charge=true;step();assert(#commands==1 and commands[1]=="lower")
         """)
 
     def test_cable_travel_then_standby_with_netdown_still_selected(self):

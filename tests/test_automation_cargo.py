@@ -122,7 +122,7 @@ class AutomatedCargoTests(unittest.TestCase):
 
     def test_manual_haul_redeploys_after_copying_every_stack_that_fits(self):
         self.lua.execute("""
-        dest(5,3);put(src,0,iron,5);put(src,1,fish,3)
+        dest(5,3)
         local lowerCount=0
         local lever={on=true,IsOn=function(self)return self.on end}
         net.NetDropped=true;net.FullyRaised=false;drawer.InteractEnabled=false
@@ -143,6 +143,7 @@ class AutomatedCargoTests(unittest.TestCase):
           end)
         end
         poll();poll()
+        put(src,0,iron,5);put(src,1,fish,3)
         lever.on=false;net.NetDropped=false;net.FullyRaised=true;drawer.InteractEnabled=true
         for i=1,4 do poll() end
         assert(dst.calls==0 and lowerCount==0)
@@ -170,6 +171,19 @@ class AutomatedCargoTests(unittest.TestCase):
         weight,limit=cargo.weight(net);assert(weight==2.125 and limit==3.125)
         src.GetTotalWeight=function()return 0/0 end
         assert(cargo.weight(net)==nil)
+        """)
+
+    def test_cabinet_free_weight_reads_live_aggregate_only_from_bound_inventory(self):
+        self.lua.execute("""
+        put(dst,0,iron,20)
+        dst.Items.ForEach=function()error('free weight must not enumerate slots')end
+        local remaining=dst:GetRemainingWeightSpace()
+        dst.GetRemainingWeightSpace=function()return remaining end
+        assert(cargo.storageFreeWeight(net,cabinet)==10)
+        remaining=-1;assert(cargo.storageFreeWeight(net,cabinet)==0)
+        remaining=0/0;assert(cargo.storageFreeWeight(net,cabinet)==nil)
+        remaining=10;cabinet.parent=nil
+        assert(cargo.storageFreeWeight(net,cabinet)==nil)
         """)
 
     def test_full_drawer_unloads_in_six_powered_seconds_and_discards_paused_credit(self):

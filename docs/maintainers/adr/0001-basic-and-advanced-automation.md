@@ -19,7 +19,7 @@ Both variants operate the stock fishing winch and share the same live haul thres
 | Operating load | 500 W | 500 W standby, 4 kW while automatically hauling or lowering, or transferring catch |
 | Unload indication | Amber lamp while a raised and accessible drawer has catch and the powered cycle is waiting for the player | Cabinet LED gauge shows actual fill, transfer activity, and storage blockage |
 
-Basic waits for the player to remove all items using the stock inventory. A partial unload leaves the drawer up. Advanced moves the catch with native inventory operations and can resume a blocked automatic unload after the player makes room. Both variants use the same rule for deciding when to haul. [Haul threshold](0003-live-net-capacity-and-haul-delay.md) · [Cycle completion](0004-manual-and-automatic-haul-completion.md)
+Basic waits for the player to remove all items using the stock inventory. A partial unload leaves the drawer up. Advanced moves the catch with native inventory operations. Both variants use the same near-full threshold. Advanced can also haul when the catch can fill the cabinet and redeploy with a remainder. [Haul threshold](0003-live-net-capacity-and-haul-delay.md) · [Advanced haul and redeployment](0013-advanced-hauls-for-cabinet-space.md)
 
 ## Consequences
 

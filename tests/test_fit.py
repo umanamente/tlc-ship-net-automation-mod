@@ -449,6 +449,7 @@ class FitTests(unittest.TestCase):
             catch={space=true,ready=false,remaining=2,status="available"}
             package.loaded["shipnet.automation_cargo"]={
                 weight=function() return 29.9,30 end,
+                storageFreeWeight=function() return 50 end,
                 inspect=function() return catch end,
                 unload=function()
                     assert(net.FullyRaised and catch.ready and catch.remaining>0)

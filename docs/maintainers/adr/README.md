@@ -12,3 +12,4 @@
 - [0010 · Both models use two authored LODs and one printed-markings atlas](0010-authored-lods-and-printed-markings.md)
 - [0011 · Unreal assets are cooked locally and CI packages them with Lua](0011-local-native-cook-and-ci-packaging.md)
 - [0012 · One verified release ZIP carries game compatibility to GitHub and Nexus](0012-release-compatibility-and-distribution.md)
+- [0013 · Advanced hauls when catch can fill the cabinet and redeploys with room in the net](0013-advanced-hauls-for-cabinet-space.md)

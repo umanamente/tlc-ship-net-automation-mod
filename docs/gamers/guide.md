@@ -17,8 +17,8 @@ Research **Winch Automator Basic** at level 6 for 1 skill point or **Winch Autom
 
 Aim at the display and press the game's **Interact** action. Use the on-screen switch to turn automation on or off. **Esc** exits the close view. The device saves its switch setting.
 
-Both versions wait for the catch to reach the current capacity minus 1 kg, then wait three game seconds without a weight increase before requesting a haul. Basic draws 500 W while powered and enabled. Its amber lamp flashes when the raised drawer has catch. Empty the stock drawer to let Basic lower the net.
+For a near-full haul, both versions wait for the catch to reach the current net capacity minus 1 kg, then wait three game seconds without a weight increase. Basic draws 500 W while powered and enabled. Its amber lamp flashes when the raised drawer has catch. Empty the stock drawer to let Basic lower the net.
 
-Advanced draws 500 W while waiting and up to 4 kW during a cycle. It moves the catch from the raised drawer into its 50 kg cabinet. Open the cabinet by aiming at its casing. The LED gauge pulses red when the cabinet is almost full or none of the remaining catch will fit. Make room to resume a stalled transfer.
+Advanced draws 500 W while waiting and up to 4 kW during a cycle. It can also haul as soon as the catch weighs at least as much as the free space in its 50 kg cabinet and some catch fits. After unloading what fits, it lowers the net with any remaining catch if the net still has room to fish. If the net is full or within 1 kg of full and the cabinet cannot take more, make room in the cabinet to resume unloading. Open the cabinet by aiming at its casing. The LED gauge pulses red when the cabinet is almost full or none of the remaining catch will fit in the raised position.
 
 You can haul at any weight using the stock lever. Advanced transfers what fits while it has power. If automation is off, the drawer stays raised after the manual haul.

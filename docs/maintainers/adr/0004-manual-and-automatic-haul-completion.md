@@ -2,6 +2,8 @@
 
 **Status** — Accepted. Shipped in v0.1.0.
 
+[ADR 0013](0013-advanced-hauls-for-cabinet-space.md) updates the redeployment rules for Advanced when automation is enabled.
+
 ## Context
 
 The stock lever remains available for pulling up an early catch or taking over the winch. A player-requested raise should let Advanced help with unloading even if automation is off. An unattended automatic haul should wait for cabinet space when some catch stays in the drawer.
