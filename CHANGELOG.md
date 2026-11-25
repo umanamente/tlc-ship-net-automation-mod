@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.2.0 (2026-11-25)
+
+### Features
+
+* **advanced:** fill the cabinet early and redeploy with remaining catch ([1b7b900](https://github.com/umanamente/tlc-ship-net-automation-mod/commit/1b7b90015474f8d33bd84ab976a1ea635be495f1))
+
+<!-- game-builds:start -->
+
+- Built against The Last Caretaker `0.10.0.653173` (Steam BuildID `25982825`).
+- Tested on The Last Caretaker `0.10.0.653173` (Steam BuildID `25982825`).
+
+<!-- game-builds:end -->
+
 ## 0.1.1 (2026-11-25)
 
 ### Bug Fixes
