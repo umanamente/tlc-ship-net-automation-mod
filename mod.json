@@ -1,7 +1,7 @@
 {
   "id": "ShipNetAutomation",
   "name": "Ship Net Automation",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "steam_app_id": 1783560,
   "tested_game_builds": [
     {

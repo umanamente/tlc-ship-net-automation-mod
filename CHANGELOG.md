@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.1.1 (2026-11-25)
+
+### Bug Fixes
+
+* simplify Vortex and manual installation ([b3604fa](https://github.com/umanamente/tlc-ship-net-automation-mod/commit/b3604fa0d9340e36da4274a140ee0bf2ede02625))
+
+<!-- game-builds:start -->
+
+- Built against The Last Caretaker `0.10.0.653173` (Steam BuildID `25982825`).
+- Tested on The Last Caretaker `0.10.0.653173` (Steam BuildID `25982825`).
+
+<!-- game-builds:end -->
+
 ## 0.1.0
 
 - Adds Basic and Advanced Winch Automators to Engineering research and the Build menu.
