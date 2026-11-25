@@ -6,6 +6,9 @@ on:
       tested_sha:
         required: true
         type: string
+    secrets:
+      NEXUSMODS_API_KEY:
+        required: true
   workflow_dispatch:
     inputs:
       tag:
@@ -125,7 +128,6 @@ jobs:
     env:
       TAG: ${{ needs.github.outputs.tag }}
       GH_TOKEN: ${{ github.token }}
-      NEXUSMODS_API_KEY: ${{ secrets.NEXUSMODS_API_KEY }}
       NEXUSMODS_FILE_ID: ${{ vars.NEXUSMODS_FILE_ID }}
       NEXUSMODS_MOD_ID: ${{ vars.NEXUSMODS_MOD_ID }}
       NEXUSMODS_BOOTSTRAP_PREVIEW_ID: ${{ vars.NEXUSMODS_BOOTSTRAP_PREVIEW_ID }}
@@ -136,6 +138,8 @@ jobs:
           persist-credentials: false
       - id: nexus
         name: Verify GitHub ZIP and prepare Nexus publication
+        env:
+          NEXUSMODS_API_KEY: ${{ secrets.NEXUSMODS_API_KEY }}
         run: python3 tools/nexus_release.py prepare "$TAG"
       - id: upload
         if: steps.nexus.outputs.upload == 'true'
@@ -156,5 +160,6 @@ jobs:
           update_mod_version: true
       - name: Verify the Nexus main file and changelog
         env:
+          NEXUSMODS_API_KEY: ${{ secrets.NEXUSMODS_API_KEY }}
           NEXUS_UPLOADED_VERSION_ID: ${{ steps.upload.outputs.version_id }}
         run: python3 tools/nexus_release.py verify "$TAG"
