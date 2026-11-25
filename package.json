@@ -1,0 +1,16 @@
+{
+  "name": "shipnetautomation-release-tools",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=24.10.0" },
+  "scripts": {
+    "test": "node --test tests/release-analysis.test.mjs",
+    "release:plan": "node tools/plan-release.mjs"
+  },
+  "devDependencies": {
+    "@semantic-release/commit-analyzer": "13.0.1",
+    "@semantic-release/release-notes-generator": "14.1.1",
+    "conventional-changelog-conventionalcommits": "9.3.1",
+    "semantic-release": "25.0.9"
+  }
+}

@@ -1,0 +1,7 @@
+# 512 x 256 atlas. Variant 	 source object 	 horizontal cm bounds 	 Z cm bounds 	 left top width height in texels
+advanced	Port | power label	-7.09	8.10	48.57	50.67	8	8	425	59
+basic	Model marking	113.77	130.98	-35.36	-34.15	8	80	482	34
+basic	Input legend	176.91	184.29	-15.60	-14.40	8	126	207	34
+basic	Beacon legend line 1	76.61	82.00	-26.94	-25.89	230	126	151	29
+basic	Beacon legend line 2	76.50	82.17	-29.03	-28.00	8	176	159	29
+basic	Power rating	178.75	182.53	-36.86	-35.92	190	176	106	26

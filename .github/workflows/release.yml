@@ -1,0 +1,160 @@
+name: Release
+
+on:
+  workflow_call:
+    inputs:
+      tested_sha:
+        required: true
+        type: string
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Existing stable tag to publish, for example v0.1.0
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: shipnet-stable-releases
+  cancel-in-progress: false
+
+jobs:
+  github:
+    if: github.ref == 'refs/heads/main'
+    runs-on: windows-latest
+    outputs:
+      tag: ${{ steps.plan.outputs.tag || steps.select.outputs.tag }}
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ inputs.tested_sha || 'main' }}
+          fetch-depth: 0
+      - id: select
+        name: Select eligible main commit or existing tag
+        shell: bash
+        env:
+          TESTED_SHA: ${{ inputs.tested_sha }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          set -euo pipefail
+          if [[ -n "$TESTED_SHA" ]]; then
+            [[ "$(git rev-parse HEAD)" == "$TESTED_SHA" ]]
+            if [[ "$(git rev-parse origin/main)" != "$TESTED_SHA" ]]; then
+              exit 0
+            fi
+            if [[ "$(git rev-parse --verify 'refs/tags/v0.1.0^{commit}' 2>/dev/null || true)" == "$TESTED_SHA" ]]; then
+              echo "tag=v0.1.0" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            if git describe --exact-match --tags --match 'v*' HEAD >/dev/null 2>&1; then
+              exit 0
+            fi
+            git switch -C main "$TESTED_SHA"
+            echo "plan=true" >> "$GITHUB_OUTPUT"
+          else
+            [[ "$TAG" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+            git merge-base --is-ancestor "refs/tags/$TAG^{commit}" origin/main
+            git switch --detach "refs/tags/$TAG"
+            echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          fi
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6
+        if: steps.select.outputs.plan == 'true'
+        with:
+          node-version: 24
+      - if: steps.select.outputs.plan == 'true'
+        run: npm ci --ignore-scripts
+      - if: steps.select.outputs.plan == 'true'
+        run: npm test
+      - id: plan
+        if: steps.select.outputs.plan == 'true'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: npm run release:plan
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        if: steps.plan.outputs.tag || steps.select.outputs.tag
+        with:
+          python-version-file: .python-version
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - if: steps.plan.outputs.tag || steps.select.outputs.tag
+        run: python -m pip install -r requirements-dev.txt
+      - if: steps.plan.outputs.tag
+        env:
+          TAG: ${{ steps.plan.outputs.tag }}
+        run: python tools/release.py prepare "$env:TAG"
+      - if: steps.plan.outputs.tag || steps.select.outputs.tag
+        env:
+          TAG: ${{ steps.plan.outputs.tag || steps.select.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          python tools/native_assets.py check
+          python -m unittest discover -s tests
+          python tools/release.py package "$TAG"
+      - if: steps.plan.outputs.tag
+        name: Push the tested release commit and tag
+        env:
+          TAG: ${{ steps.plan.outputs.tag }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- CHANGELOG.md mod.json src/ShipNetAutomation/Scripts/main.lua
+          git commit -m "chore(release): ${TAG#v}"
+          git tag "$TAG"
+          git push --atomic origin HEAD:refs/heads/main "refs/tags/$TAG"
+      - name: Publish and verify GitHub Release assets
+        if: steps.plan.outputs.tag || steps.select.outputs.tag
+        env:
+          TAG: ${{ steps.plan.outputs.tag || steps.select.outputs.tag }}
+          GH_TOKEN: ${{ github.token }}
+        run: python tools/release.py publish "$env:TAG"
+
+  nexus:
+    needs: github
+    if: needs.github.outputs.tag
+    runs-on: ubuntu-latest
+    environment: nexus
+    permissions:
+      contents: read
+    env:
+      TAG: ${{ needs.github.outputs.tag }}
+      GH_TOKEN: ${{ github.token }}
+      NEXUSMODS_API_KEY: ${{ secrets.NEXUSMODS_API_KEY }}
+      NEXUSMODS_FILE_ID: ${{ vars.NEXUSMODS_FILE_ID }}
+      NEXUSMODS_MOD_ID: ${{ vars.NEXUSMODS_MOD_ID }}
+      NEXUSMODS_BOOTSTRAP_PREVIEW_ID: ${{ vars.NEXUSMODS_BOOTSTRAP_PREVIEW_ID }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          ref: ${{ needs.github.outputs.tag }}
+          persist-credentials: false
+      - id: nexus
+        name: Verify GitHub ZIP and prepare Nexus publication
+        run: python3 tools/nexus_release.py prepare "$TAG"
+      - id: upload
+        if: steps.nexus.outputs.upload == 'true'
+        name: Upload the verified ZIP to Nexus Mods
+        uses: Nexus-Mods/upload-action@98532f7670c27cbecc78fae03fa3e278147827e2 # v1.0.0-beta.11
+        with:
+          api_key: ${{ secrets.NEXUSMODS_API_KEY }}
+          file_id: ${{ vars.NEXUSMODS_FILE_ID }}
+          filename: ${{ steps.nexus.outputs.archive }}
+          display_name: Ship Net Automation ${{ steps.nexus.outputs.version }}
+          description: "GitHub release ZIP. SHA-256: ${{ steps.nexus.outputs.digest }}"
+          version: ${{ steps.nexus.outputs.version }}
+          category: main
+          archive_existing_version: true
+          primary_mod_manager_download: true
+          allow_mod_manager_download: true
+          show_requirements_pop_up: true
+          update_mod_version: true
+      - name: Verify the Nexus main file and changelog
+        env:
+          NEXUS_UPLOADED_VERSION_ID: ${{ steps.upload.outputs.version_id }}
+        run: python3 tools/nexus_release.py verify "$TAG"

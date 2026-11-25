@@ -1,0 +1,77 @@
+{
+  "built_against": {
+    "game_version": "0.10.0.653173",
+    "project_version": "0.10.0",
+    "steam_app_id": 1783560,
+    "steam_build_id": "25982825"
+  },
+  "export": {
+    "inputs": {
+      "3d_models/basic-winch-automator-v01.blend": "5b3bb01e8327ac6bb68d171191bfa2777715a284d4dbf16dd182fc89153c2537",
+      "3d_models/rail-controller-v05.blend": "4093d787ad3145096463fb4a22e2def7007760892e7bea309094a59494b6d902",
+      "src/ShipNetAutomation/Scripts/shipnet/printed_labels.layout": "8841977706c867c7f397f64083e814e2ba47e2e1d7959b0d3d38f7b424551dd8",
+      "tools/build_markings.py": "58ad39fa74622a17ed8d2086cae810ee50035d29495e7e4665648369cc7085d2",
+      "tools/export_rail_model.py": "520e1c4ba8fad4e730d437975fdae6683f9ddd005d3d3a12982615888d316788",
+      "tools/rail_model_detail.py": "4d02826b665211765e25481ca72838cf0de4ab15ab054bb159eefb271988e634"
+    },
+    "outputs": {
+      "artwork/models/winch-markings.png": "123b73c9cdbaf96c4cf4b801ab2e473a97a0b56dfd24f1b249fa732165e92cad",
+      "src/ShipNetAutomation/Scripts/shipnet/basic_controller.snm": "b99b9d3e2029f80787406e6ff21ab12014198bf819f045b0e241472d71df9de2",
+      "src/ShipNetAutomation/Scripts/shipnet/basic_controller_lod1.snm": "13690794d254ee02ecca04e207ea7524f0a1d6ef7f028c81d556ce2c3f8fff0a",
+      "src/ShipNetAutomation/Scripts/shipnet/rail_controller.snm": "e792b809e920fc73d39e9e73912d419b944ef95bc41191ad9daa35d8b0f23f95",
+      "src/ShipNetAutomation/Scripts/shipnet/rail_controller_lod1.snm": "52a1da8df6a7486f058fb84027bb161dcfbe32a780a920479d2739216ecf46c9"
+    }
+  },
+  "native": {
+    "inputs": {
+      "artwork/catalog/winch-automator-basic.png": "c456764b68bcb399cdcc3205df555936113ab12592ba8b98845b4e73b7ac0316",
+      "artwork/catalog/winch-automator.png": "5c5695293213f57d046a27d238c60b0efc898b33ba4977c9544f5903b58b8da6",
+      "artwork/models/winch-markings.png": "123b73c9cdbaf96c4cf4b801ab2e473a97a0b56dfd24f1b249fa732165e92cad",
+      "native/Voyage/Mods/ShipNetAutomationCatalogue/ShipNetAutomationCatalogue.uplugin": "3371ba2d163c1e69eac585704d509bf38f69bcdfc083dfb35e17075b14d70aca",
+      "src/ShipNetAutomation/Scripts/shipnet/basic_controller.snm": "b99b9d3e2029f80787406e6ff21ab12014198bf819f045b0e241472d71df9de2",
+      "src/ShipNetAutomation/Scripts/shipnet/basic_controller_lod1.snm": "13690794d254ee02ecca04e207ea7524f0a1d6ef7f028c81d556ce2c3f8fff0a",
+      "src/ShipNetAutomation/Scripts/shipnet/pbr_palette.layout": "be75cf00aa90fd6f8ba88607446351f2782ba98f7951e343edb3e1c8996bdfa5",
+      "src/ShipNetAutomation/Scripts/shipnet/printed_labels.layout": "8841977706c867c7f397f64083e814e2ba47e2e1d7959b0d3d38f7b424551dd8",
+      "src/ShipNetAutomation/Scripts/shipnet/rail_controller.snm": "e792b809e920fc73d39e9e73912d419b944ef95bc41191ad9daa35d8b0f23f95",
+      "src/ShipNetAutomation/Scripts/shipnet/rail_controller_lod1.snm": "52a1da8df6a7486f058fb84027bb161dcfbe32a780a920479d2739216ecf46c9",
+      "tools/build_cargo_sweep.py": "659588fc19ae5b4632ca63aaff814ca1fafe8e82cac6e7ce17b8747b40c4f932",
+      "tools/build_catalog_icon.py": "a8041e3c276e939324e4d9d1dd631a976d87646c1992f0164d2843d13152b9e3",
+      "tools/build_construction.py": "bcd393a69355d7a028dad932f3fbc8c0eea7d2a140e594b633559452cd9bb46a",
+      "tools/build_construction_mesh.py": "bd8a683baded38d30a2c099e14c483d8e084b4c920738db25ea7447c97388c71",
+      "tools/build_control_screen.py": "1a2462f1dde7d9431654be2eafb5f1b03060b5e2de1ea4e9481c19a260e9d36b",
+      "tools/build_markings.py": "58ad39fa74622a17ed8d2086cae810ee50035d29495e7e4665648369cc7085d2",
+      "tools/construction_basic.py": "54dcf082c40278a994423fe40a4876d616358bea820d6c710caf8e385da2b1e8",
+      "tools/construction_interaction.py": "2110ffad52660a6598bd590e1665fad98ded9cd4492d99e46fd0f0d80b8ae896",
+      "tools/construction_packages.py": "4b80edeeb55c6eccf5adfb2a8b3930e9d95d7e2de73d48fb3e049396dda683b0",
+      "tools/construction_power.py": "9da2d06826c8000502a5df2bf719efec80471a2f9b7559ee97fa3c506c6bece5",
+      "tools/construction_registry.py": "0e45d19a71af43f5bf5b913caee7ae305c059950cdecbc307323317b181ac5e7",
+      "tools/cook_visual_asset.py": "29a5f6df14595f4d212bec987fe804d044cdd49e46da8d06901a106a8243afb7"
+    },
+    "outputs": {
+      "native/Voyage/Content/Paks/ShipNetWinch_v07_P.pak": "8577b23d6f19dfc1bb0cc55cc5d3f0f90eb8b25d30507c109312ee105f5b0b29",
+      "native/Voyage/Content/Paks/ShipNetWinch_v07_P.ucas": "317e7be28982ca74a9969cb271e7b1ec142c6830cd9b064821cb396afc546526",
+      "native/Voyage/Content/Paks/ShipNetWinch_v07_P.utoc": "0027b495448b5a337133c86f15ae87d6040a339e17d4f4ccaf46a725f8f28bf7"
+    }
+  },
+  "schema": 1,
+  "toolchain": {
+    "blender": "Blender 5.2.3 LTS",
+    "cityhash": "0.4.10",
+    "executables_sha256": {
+      "blender": "9d5df7a9ac2a7c5085aa0669700021bfa5c5e92de167a2510b0d0942c34deab0",
+      "jmap-dumper": "6a56dfca0654835160e94f3e1d83023a86ddb1c3d29356fc0c4b008b7190987d",
+      "repak": "fcd538e5994b9bb833622d425ae346f4e0692f02d4b0025114a559f9b6286022",
+      "retoc": "6f8f86ae3fd747a3b785e787a33c24f9a11735d03664948d6b619f18861650f5",
+      "uassetgui": "42837cd279a78df57b537020a0169c5d2259a4570d3b62f4b96852f0f5c27f96"
+    },
+    "pillow": "13.0.0",
+    "python": "3.14.1"
+  },
+  "upstream": {
+    "game_indexes": {
+      "global.utoc": "c86c547034643a274bad88ff7b3993f4f402ac6c83f62f4e32356f3d30d37761",
+      "pakchunk0-Windows.utoc": "c53be29a53fc3d65a01e95b8dbccdc4ce45037ce8546e9102fcb6cdecb7789ab"
+    },
+    "reflection_sha256": "f4ac32dc1238b5404625567463589ed577f9ef38ffc40e6522b4223b1f4ad3f1"
+  }
+}

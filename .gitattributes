@@ -1,0 +1,8 @@
+* text=auto eol=lf
+*.blend binary
+*.png binary
+*.pak binary
+*.utoc binary
+*.ucas binary
+*.snm binary
+*.layout text eol=lf

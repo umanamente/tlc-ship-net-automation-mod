@@ -1,0 +1,14 @@
+/.venv/
+/node_modules/
+/dist/
+/local/
+/output/
+/.build/
+__pycache__/
+*.pyc
+*.jsonl
+*.blend[0-9]
+src/ShipNetAutomation/settings.ini*
+src/ShipNetAutomation/rail-fit.ini*
+src/ShipNetAutomation/Logs/*
+!src/ShipNetAutomation/Logs/.gitkeep
