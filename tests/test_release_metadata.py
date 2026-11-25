@@ -41,9 +41,27 @@ class ReleaseMetadataTests(unittest.TestCase):
                 release.apply_plan("v0.2.0")
             document = changelog.read_text(encoding="utf-8")
             notes = release.changelog_entry(document, "0.2.0").group(1)
-            self.assertIn("Built against The Last Caretaker `0.10.0.653173` (Steam BuildID `25982825`)", notes)
-            self.assertIn("Tested on The Last Caretaker `0.10.1.700000` (Steam BuildID `27123456`)", notes)
+            self.assertIn("> **Built on** `0.10.0.653173` (BuildID `25982825`)", notes)
+            self.assertIn("> **Tested on** ✅ `0.10.1.700000` (BuildID `27123456`)", notes)
             self.assertTrue(document.endswith(history))
+
+    def test_github_compatibility_quote_merges_the_same_build_and_lists_multiple_builds(self):
+        combined = release.format_game_build_notes(self.built, [self.built])
+        self.assertEqual(combined.splitlines()[2:-2], [
+            "> **Built and tested on** ✅ `0.10.0.653173` (BuildID `25982825`)",
+        ])
+        same_version_other_build = {**self.built, "steam_build_id": "25982900"}
+        multiple = release.format_game_build_notes(self.built, [same_version_other_build, self.tested])
+        self.assertEqual(multiple.splitlines()[2:-2], [
+            "> **Built on** `0.10.0.653173` (BuildID `25982825`)",
+            ">",
+            "> **Tested on**",
+            ">",
+            "> - ✅ `0.10.0.653173` (BuildID `25982900`)",
+            "> - ✅ `0.10.1.700000` (BuildID `27123456`)",
+        ])
+        pending = release.format_game_build_notes(self.built, [])
+        self.assertIn("> **Testing pending**", pending)
 
     def test_github_notes_are_the_changelog_entry_for_that_tag(self):
         with TemporaryDirectory() as folder:

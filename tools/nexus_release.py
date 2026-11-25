@@ -2,14 +2,17 @@
 import argparse
 import json
 import os
+from pathlib import Path
 import re
 import subprocess
 import time
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
+from zipfile import BadZipFile, ZipFile
 
 from native_assets import ROOT, sha256
-from release import CHANGELOG, STABLE_TAG, changelog_entry
+from package_mod import MOD
+from release import BUILD_END, BUILD_START, CHANGELOG, STABLE_TAG, changelog_entry
 
 DIST = ROOT / "dist"
 
@@ -62,15 +65,37 @@ def main_version(records, version, preview_id=None):
 def notes_lines(changelog, version):
     notes = changelog_entry(changelog, version).group(1)
     lines = []
+    in_build_block = False
     for line in notes.splitlines():
         line = line.strip()
-        if not line or line.startswith(("#", "<!--")):
+        if line == BUILD_START:
+            in_build_block = True
+            continue
+        if line == BUILD_END:
+            in_build_block = False
+            continue
+        if in_build_block or not line or line.startswith(("#", "<!--")):
             continue
         line = re.sub(r"^[-*+] ", "", line)
         line = re.sub(r"\s*\(\[[0-9a-f]{7,40}\]\(https://github\.com/[^\s)]+/commit/[0-9a-f]+\)\)$", "", line)
         line = re.sub(r"\[([^]]+)\]\(https://github\.com/[^\s)]+\)", r"\1", line)
         lines.append(line.replace("`", "").replace("**", ""))
     return list(dict.fromkeys(lines))
+
+
+def game_build_line(archive, version):
+    with ZipFile(archive) as file:
+        info = json.loads(file.read((MOD / "BUILDINFO.json").as_posix()))
+    if info["mod_version"] != version or not info["tested_game_builds"]:
+        raise ValueError(f"Invalid game build information in {archive.name}")
+
+    def display(identity):
+        return f"{identity['game_version']} (BuildID {identity['steam_build_id']})"
+
+    built = display(info["built_against"])
+    tested = dict.fromkeys(map(display, info["tested_game_builds"]))
+    checks = ", ".join(f"✓ {build}" for build in tested)
+    return f"ⓘ [Built on]  {built} | Tested: {checks}"
 
 
 def existing_notes(path, version):
@@ -91,9 +116,10 @@ def existing_notes(path, version):
         page += 1
 
 
-def sync_notes(mod_id, version, *, before_upload):
+def sync_notes(mod_id, version, changelog, archive, *, before_upload):
     path = f"/mods/{mod_id}/changelogs"
-    expected = notes_lines(CHANGELOG.read_text(encoding="utf-8"), version)
+    expected = notes_lines(changelog.read_text(encoding="utf-8"), version)
+    expected.append(game_build_line(archive, version))
     present = existing_notes(path, version)
     missing = [line for line in expected if line not in present]
     if not missing:
@@ -116,27 +142,28 @@ def sync_notes(mod_id, version, *, before_upload):
     raise ValueError("Nexus did not confirm the changelog after one append")
 
 
-def github_archive(tag):
-    name = f"ShipNetAutomation-{tag[1:]}.zip"
-    DIST.mkdir(exist_ok=True)
+def download_github_archive(archive, tag):
+    name = archive.name
+    archive.parent.mkdir(exist_ok=True)
     subprocess.run(["gh", "release", "download", tag, "--pattern", name, "--pattern", name + ".sha256",
-                    "--dir", DIST, "--clobber"], cwd=ROOT, check=True)
-    archive = DIST / name
-    expected = (DIST / (name + ".sha256")).read_text(encoding="utf-8").split()
+                    "--dir", archive.parent, "--clobber"], cwd=ROOT, check=True)
+    expected = archive.with_suffix(".zip.sha256").read_text(encoding="utf-8").split()
     digest = sha256(archive)
     if expected != [digest, name]:
         raise ValueError("GitHub release ZIP differs from its checksum")
-    return archive, digest
+    return digest
 
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("phase", choices=("prepare", "verify"))
     parser.add_argument("tag")
+    parser.add_argument("--changelog", type=Path, default=CHANGELOG)
     args = parser.parse_args()
     if not STABLE_TAG.fullmatch(args.tag):
         parser.error("expected a stable vMAJOR.MINOR.PATCH tag")
     version = args.tag[1:]
+    archive = DIST / f"ShipNetAutomation-{version}.zip"
     try:
         mod_id, file_id = map(positive_id, ("NEXUSMODS_MOD_ID", "NEXUSMODS_FILE_ID"))
         files = request(f"/mods/{mod_id}/files", version)["data"]["mod_files"]
@@ -146,8 +173,8 @@ def main():
         preview = os.environ.get("NEXUSMODS_BOOTSTRAP_PREVIEW_ID") if version == "0.1.0" else None
         existing = main_version(records, version, preview)
         if args.phase == "prepare":
-            archive, digest = github_archive(args.tag)
-            sync_notes(mod_id, version, before_upload=existing is None)
+            digest = download_github_archive(archive, args.tag)
+            sync_notes(mod_id, version, args.changelog, archive, before_upload=existing is None)
             output("upload", str(existing is None).lower())
             output("archive", archive.relative_to(ROOT).as_posix())
             output("digest", digest)
@@ -158,9 +185,9 @@ def main():
                 raise ValueError(f"Nexus has not confirmed the uploaded main file for {version}")
             if preview and any(str(item["game_scoped_id"]) == preview and item["category"] == "main" for item in records):
                 raise ValueError("The original preview is still listed as a main file")
-            sync_notes(mod_id, version, before_upload=False)
+            sync_notes(mod_id, version, args.changelog, archive, before_upload=False)
             print(f"Verified Nexus main file {existing['game_scoped_id']} for {version} and its changelog.")
-    except (OSError, ValueError, KeyError, subprocess.CalledProcessError) as exc:
+    except (OSError, ValueError, KeyError, BadZipFile, subprocess.CalledProcessError) as exc:
         parser.exit(1, f"{exc}\n")
 
 

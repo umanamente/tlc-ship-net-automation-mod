@@ -8,8 +8,7 @@
 
 <!-- game-builds:start -->
 
-- Built against The Last Caretaker `0.10.0.653173` (Steam BuildID `25982825`).
-- Tested on The Last Caretaker `0.10.0.653173` (Steam BuildID `25982825`).
+> **Built and tested on** ✅ `0.10.0.653173` (BuildID `25982825`)
 
 <!-- game-builds:end -->
 
@@ -21,8 +20,7 @@
 
 <!-- game-builds:start -->
 
-- Built against The Last Caretaker `0.10.0.653173` (Steam BuildID `25982825`).
-- Tested on The Last Caretaker `0.10.0.653173` (Steam BuildID `25982825`).
+> **Built and tested on** ✅ `0.10.0.653173` (BuildID `25982825`)
 
 <!-- game-builds:end -->
 
@@ -37,7 +35,6 @@
 
 <!-- game-builds:start -->
 
-- Built against The Last Caretaker `0.10.0.653173` (Steam BuildID `25982825`).
-- Tested on The Last Caretaker `0.10.0.653173` (Steam BuildID `25982825`).
+> **Built and tested on** ✅ `0.10.0.653173` (BuildID `25982825`)
 
 <!-- game-builds:end -->

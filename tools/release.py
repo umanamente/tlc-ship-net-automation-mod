@@ -21,18 +21,28 @@ def git(*args):
     return subprocess.check_output(["git", *args], cwd=ROOT, text=True).strip()
 
 
-def game_build_notes(mod):
+def format_game_build_notes(built_against, tested_builds):
     def display(identity):
-        return f"The Last Caretaker `{identity['game_version']}` (Steam BuildID `{identity['steam_build_id']}`)"
+        return f"`{identity['game_version']}` (BuildID `{identity['steam_build_id']}`)"
 
-    built = read_manifest()["built_against"]
-    lines = [f"- Built against {display(built)}."]
-    tested = verified_builds(mod)
-    if tested:
-        lines.extend(f"- Tested on {display(identity)}." for identity in tested)
+    built = display(built_against)
+    tested = list(dict.fromkeys(map(display, tested_builds)))
+    if tested == [built]:
+        lines = [f"> **Built and tested on** ✅ {built}"]
     else:
-        lines.append("- Gameplay validation pending.")
+        lines = [f"> **Built on** {built}", ">"]
+        if len(tested) > 1:
+            lines.extend(["> **Tested on**", ">"])
+            lines.extend(f"> - ✅ {build}" for build in tested)
+        elif tested:
+            lines.append(f"> **Tested on** ✅ {tested[0]}")
+        else:
+            lines.append("> **Testing pending**")
     return "\n".join([BUILD_START, "", *lines, "", BUILD_END])
+
+
+def game_build_notes(mod):
+    return format_game_build_notes(read_manifest()["built_against"], verified_builds(mod))
 
 
 def changelog_entry(changelog, version):
