@@ -2,7 +2,7 @@
 import argparse
 import hashlib
 import json
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 import re
 from tempfile import NamedTemporaryFile
 from zipfile import ZIP_DEFLATED, ZipFile, ZipInfo
@@ -12,6 +12,7 @@ from native_assets import DESCRIPTOR, PACKAGES, ROOT, check, read_manifest
 LUA = ROOT / "src/ShipNetAutomation"
 MOD = Path("Voyage/Binaries/Win64/ue4ss/Mods/ShipNetAutomation")
 ENTRY = MOD / "Scripts/main.lua"
+VORTEX_OVERRIDE = "vortex_override_instructions.json"
 
 
 def metadata():
@@ -50,6 +51,16 @@ def verified_builds(mod):
     return []
 
 
+def vortex_override(members):
+    # The ModKit installer flattens the UE4SS Mods directory into Voyage/Mods.
+    # Vortex matches override sources against Windows-normalized archive paths.
+    instructions = [{"type": "setmodtype", "value": "thelastcaretaker-root"}]
+    for member in sorted(members):
+        path = str(PureWindowsPath(member))
+        instructions.append({"type": "copy", "source": path, "destination": path})
+    return (json.dumps(instructions, indent=2) + "\n").encode("utf-8")
+
+
 def package(require_tested=False):
     check()
     mod = metadata()
@@ -69,6 +80,7 @@ def package(require_tested=False):
         json.dumps({"mod_version": version, "built_against": built_against, "tested_game_builds": tested},
                    indent=2, sort_keys=True) + "\n"
     ).encode("utf-8")
+    payloads[VORTEX_OVERRIDE] = vortex_override(payloads)
     archive = ROOT / "dist" / f"ShipNetAutomation-{version}.zip"
     archive.parent.mkdir(exist_ok=True)
     with NamedTemporaryFile(dir=archive.parent, prefix="shipnet-", suffix=".zip", delete=False) as tmp:

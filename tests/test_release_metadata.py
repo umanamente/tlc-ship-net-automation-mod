@@ -75,3 +75,17 @@ class ReleaseMetadataTests(unittest.TestCase):
                 self.assertEqual(package_mod.runtime_fingerprint(), package_mod.runtime_fingerprint(root / "installed"))
                 installed.write_bytes(b'local version = "0.2.0"\nreturn false\n')
                 self.assertNotEqual(package_mod.runtime_fingerprint(), package_mod.runtime_fingerprint(root / "installed"))
+
+    def test_vortex_override_keeps_lua_and_native_files_at_their_game_paths(self):
+        paths = [
+            r"Voyage\Binaries\Win64\ue4ss\Mods\ShipNetAutomation\Scripts\main.lua",
+            r"Voyage\Content\Paks\ShipNetWinch_P.pak",
+            r"Voyage\Mods\ShipNetAutomationCatalogue\ShipNetAutomationCatalogue.uplugin",
+        ]
+        members = [path.replace("\\", "/") for path in reversed(paths)]
+        instructions = json.loads(package_mod.vortex_override(members))
+
+        self.assertEqual(instructions[0], {"type": "setmodtype", "value": "thelastcaretaker-root"})
+        self.assertEqual(instructions[1:], [
+            {"type": "copy", "source": path, "destination": path} for path in paths
+        ])
