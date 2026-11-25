@@ -4,8 +4,7 @@ The final Blender masters for Basic and Advanced are in [3d_models](../3d_models
 
 - [Catalogue icons](catalog/) are in-game construction menu inputs.
 - [Printed markings](models/winch-markings.png) are baked from the Blender masters.
-- [Construction screenshots](construction/) illustrate installation, power and fabrication.
 - [GitHub artwork](branding/github/) contains the Advanced cabinet render used in the README.
-- [Nexus artwork](branding/nexus/) contains a cover candidate and gallery images for the mod page.
+- The mod cover and screenshots are available in the [Nexus Mods gallery](https://www.nexusmods.com/thelastcaretaker/mods/454?tab=images).
 
-The renders show the mod models. Construction images are in-game captures. Keep editable sources and the corresponding release media together when updating the artwork.
+The renders show the mod models. Keep the editable sources with their generated assets.

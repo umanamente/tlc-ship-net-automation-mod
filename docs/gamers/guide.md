@@ -13,8 +13,6 @@ Research **Winch Automator Basic** at level 6 for 1 skill point or **Winch Autom
 | Display Screen | 1 | 1 |
 | Connector Ports | 1 | 1 |
 
-![Basic mounted on the winch](../../artwork/construction/basic-installed.png)
-
 ## Run a fishing cycle
 
 Aim at the display and press the game's **Interact** action. Use the on-screen switch to turn automation on or off. **Esc** exits the close view. The device saves its switch setting.
