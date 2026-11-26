@@ -5,7 +5,7 @@ local Cycle = {}
 Cycle.__index = Cycle
 local SWITCH_ACK_SECONDS = 4
 local HAUL_MARGIN_KG = 1
-local HAUL_DELAY_SECONDS = 3
+local HAUL_DELAY_SECONDS = 10
 local BEFORE_UNLOAD_SECONDS = 1
 local BEFORE_LOWER_SECONDS = 1
 local BASIC_POWER_WATTS = 500
@@ -79,11 +79,17 @@ local function storageHaul(info)
 end
 
 local function fishingAction(self, net, cabinet, now, lowering)
+    -- Recheck the live weight on every poll, including during near-full confirmation.
     local weight, capacity = cargo.weight(net)
     if not weight or not capacity or capacity <= 0 then
         self.haulCheck = nil
         return "Waiting for fishing net", "standby"
     end
+    if weight >= capacity then
+        self.haulCheck = nil
+        return "Raising net", "active", "raise"
+    end
+
     local storage
     if not self.basic and not lowering and weight > 0 then
         local freeKg = cargo.storageFreeWeight(net, cabinet)
@@ -112,9 +118,8 @@ local function fishingAction(self, net, cabinet, now, lowering)
         if lowering then return "Lowering net", "active" end
         return "Confirming catch weight", "standby"
     end
-    if self.basic then return "Raising net", "active", "raise" end
-    if lowering then return "Lowering net", "active" end
-    return storageHaul(storage or cargo.inspect(net, cabinet))
+    if lowering and not self.basic then return "Lowering net", "active" end
+    return "Raising net", "active", "raise"
 end
 
 local function lowerWhenReady(self, now)

@@ -19,6 +19,7 @@ class AutomationFixture(unittest.TestCase):
             switch={on=true,IsOn=function(s) return s.on end}
             catch={weight=28,capacity=30,space=true,ready=false,remaining=3,status="available"}
             time=0
+            nearFullWaitPolls=10/.25
             local power={consume=function(_,actor,seconds,mode)
                 assert(actor==cabinet)
                 if mode~="off" and seconds==0 then primed=mode;return false,"no_elapsed" end
@@ -72,70 +73,80 @@ class AdvancedHaulTests(AutomationFixture):
     def test_first_poll_opens_receiver_before_running_the_cycle(self):
         self.lua.execute('assert(primed=="standby" and #used==0 and #commands==0)')
 
+    def test_live_full_capacity_hauls_on_the_first_powered_poll(self):
+        self.lua.execute("""
+            catch.capacity=300;catch.weight=299.5;catch.freeKg=0;catch.space=false
+            step(4);assert(#commands==0)
+            charge=false;catch.capacity=299.5
+            step();assert(#commands==0 and cycle.status=="Waiting for external power")
+            charge=true;step()
+            assert(#commands==1 and commands[1]=="raise")
+        """)
+
     def test_live_capacity_crosses_the_threshold_in_both_directions(self):
         self.lua.execute("""
             catch.freeKg=500
-            catch.weight=29;step(12)
-            catch.capacity=300;step(20)
+            catch.weight=29;step(nearFullWaitPolls)
+            catch.capacity=300;step(nearFullWaitPolls+8)
             assert(#commands==0 and cycle.status=="Waiting for 299 kg")
-            catch.weight=298.9999;step(16);assert(#commands==0)
-            catch.weight=299;step(12);assert(#commands==0)
+            catch.weight=298.9999;step(nearFullWaitPolls+4);assert(#commands==0)
+            catch.weight=299;step(nearFullWaitPolls);assert(#commands==0)
             step();assert(#commands==1 and commands[1]=="raise")
 
             loadCycle();step()
-            catch.weight=2.125;step(16);assert(#commands==1)
-            catch.capacity=3.125;step(12);assert(#commands==1)
+            catch.weight=2.125;step(nearFullWaitPolls+4);assert(#commands==1)
+            catch.capacity=3.125;step(nearFullWaitPolls);assert(#commands==1)
             step();assert(#commands==2 and commands[2]=="raise")
         """)
 
     def test_each_fractional_increase_restarts_even_at_the_deadline(self):
         self.lua.execute("""
-            catch.weight=29;step(12)
+            catch.weight=29;step(nearFullWaitPolls)
             catch.weight=29.875;step(8);assert(#commands==0)
             catch.weight=29.25;step()
-            catch.weight=29.2501;step(12);assert(#commands==0)
-            catch.weight=29.2502;step(12);assert(#commands==0)
+            catch.weight=29.2501;step(nearFullWaitPolls);assert(#commands==0)
+            catch.weight=29.2502;step(nearFullWaitPolls);assert(#commands==0)
             step();assert(#commands==1 and commands[1]=="raise")
         """)
 
     def test_fractional_growth_while_waiting_for_power(self):
         self.lua.execute("""
-            charge=false;catch.weight=29;step(20);assert(#commands==0)
+            charge=false;catch.weight=29;step(nearFullWaitPolls+8);assert(#commands==0)
             catch.weight=29.01;step(4)
-            charge=true;step(8);assert(#commands==0)
+            charge=true;step(nearFullWaitPolls-4);assert(#commands==0)
             step();assert(#commands==1 and commands[1]=="raise")
         """)
 
     def test_weight_can_fall_without_crossing_the_live_threshold(self):
         self.lua.execute("""
-            catch.weight=29.75;step(6)
-            catch.capacity=30.25;catch.weight=29.25;step(6);assert(#commands==0)
+            catch.weight=29.75;step(nearFullWaitPolls/2)
+            catch.capacity=30.25;catch.weight=29.25;step(nearFullWaitPolls/2);assert(#commands==0)
             step();assert(#commands==1 and commands[1]=="raise")
         """)
 
     def test_empty_small_and_unreadable_net(self):
         self.lua.execute("""
-            catch.capacity=1;catch.weight=0;step(20)
-            catch.capacity=.5;step(20);assert(#commands==0)
-            catch.weight=.125;step(12)
+            catch.capacity=1;catch.weight=0;step(nearFullWaitPolls+8)
+            catch.capacity=.5;step(nearFullWaitPolls+8);assert(#commands==0)
+            catch.weight=.125;step(nearFullWaitPolls)
             catch.weight=0;step()
-            catch.weight=.125;step(12);assert(#commands==0)
-            catch.capacity=nil;step(20)
-            catch.capacity=0;step(20);assert(#commands==0)
-            catch.capacity=.5;step(12);assert(#commands==0)
+            catch.weight=.125;step(nearFullWaitPolls);assert(#commands==0)
+            catch.capacity=nil;step(nearFullWaitPolls+8)
+            catch.capacity=0;step(nearFullWaitPolls+8);assert(#commands==0)
+            catch.capacity=.5;step(nearFullWaitPolls);assert(#commands==0)
             step();assert(#commands==1 and commands[1]=="raise")
         """)
 
     def test_reload_uses_saved_switch_live_limit_and_fresh_wait(self):
         self.lua.execute("""
             catch.freeKg=500
-            catch.weight=29;step(12)
-            catch.capacity=300;loadCycle();step(20);assert(#commands==0)
-            catch.weight=299;step(12)
-            loadCycle();step();step(12);assert(#commands==0)
-            cabinet.WinchAutomationEnabled=false;loadCycle();step(20)
+            catch.weight=29;step(nearFullWaitPolls)
+            catch.capacity=300;loadCycle();step(nearFullWaitPolls+8);assert(#commands==0)
+            catch.weight=299;step(nearFullWaitPolls)
+            loadCycle();step();step(nearFullWaitPolls);assert(#commands==0)
+            cabinet.WinchAutomationEnabled=false;loadCycle();step(nearFullWaitPolls+8)
             assert(#commands==0 and cycle.drawKW==0)
-            cycle:setEnabled(cabinet,true);step();step(12);assert(#commands==0)
+            cycle:setEnabled(cabinet,true);step();step(nearFullWaitPolls);assert(#commands==0)
             step();assert(#commands==1 and commands[1]=="raise")
         """)
 
@@ -149,7 +160,7 @@ class AutomationTest(AutomationFixture):
         self.lua.execute("""
             basicCheck=true;cycle=require("shipnet.automation").new(nil,true)
             assert(fixedDraw==.5)
-            catch.weight=29.5;step();step(12);assert(#commands==0 and cycle.drawKW==.5)
+            catch.weight=29.5;step();step(nearFullWaitPolls);assert(#commands==0 and cycle.drawKW==.5)
             step();assert(#commands==1 and commands[1]=="raise" and cycle.drawKW==.5)
             switch.on=false;net.NetDropped=false;step(5);assert(not cycle.drawerWaitingSince)
             net.FullyRaised=true;step(5);assert(not cycle.drawerWaitingSince and #commands==1)
@@ -192,7 +203,7 @@ class AutomationTest(AutomationFixture):
     def test_near_capacity_catch_one_command_each_way_and_real_empty_before_lower(self):
         self.lua.execute("""
             step(3); assert(#commands==0 and used[#used]=="standby")
-            catch.weight=29.9; step(12); assert(#commands==0 and used[#used]=="standby")
+            catch.weight=29.9; step(nearFullWaitPolls); assert(#commands==0 and used[#used]=="standby")
             step(); assert(#commands==1 and commands[1]=="raise")
             switch.on=false; net.NetDropped=false; step(2); assert(moved==0)
             net.FullyRaised=true; step(2); assert(moved==0)
@@ -205,38 +216,37 @@ class AutomationTest(AutomationFixture):
             net.FullyRaised=false; net.NetDropped=true; switch.on=true
             catch.ready=false; catch.weight=0; step(3)
             assert(#commands==2 and cabinet.WinchAutomationEnabled)
-            catch.weight=29;catch.remaining=1;step(12);assert(#commands==2)
+            catch.weight=29;catch.remaining=1;step(nearFullWaitPolls);assert(#commands==2)
             step();assert(#commands==3 and commands[3]=="raise")
         """)
 
     def test_delay_requires_fresh_qualifying_weight_and_resets_on_lost_reading(self):
         self.lua.execute("""
-            catch.weight=28.9999;step(20);assert(#commands==0)
-            catch.weight=29;step(12);assert(#commands==0)
+            catch.weight=28.9999;step(nearFullWaitPolls+8);assert(#commands==0)
+            catch.weight=29;step(nearFullWaitPolls);assert(#commands==0)
             catch.weight=28.99;step()
-            catch.weight=30;step(12);assert(#commands==0)
+            catch.weight=29.9;step(nearFullWaitPolls);assert(#commands==0)
             catch.weight=nil;step()
             catch.weight=29;step(8);catch.weight=29.9;step(4)
             assert(#commands==0 and cycle.status=="Confirming catch weight")
-            step(8);assert(#commands==0)
+            step(nearFullWaitPolls-4);assert(#commands==0)
             step();assert(#commands==1 and commands[1]=="raise")
         """)
 
-    def test_delay_checks_net_storage_and_power_again_before_hauling(self):
+    def test_near_full_net_hauls_with_full_cabinet_after_confirmation_and_power(self):
         self.lua.execute("""
-            catch.weight=29;step(12)
+            catch.weight=29;catch.freeKg=0;catch.space=false;step(nearFullWaitPolls)
             net.NetDropped=false;step();assert(#commands==0)
-            net.NetDropped=true;step(12);assert(#commands==0)
-            catch.space=false;step();assert(#commands==0 and cycle.status=="Empty the cabinet")
-            catch.space=true;charge=false;step(4);assert(#commands==0)
+            net.NetDropped=true;step(nearFullWaitPolls);assert(#commands==0)
+            charge=false;step();assert(#commands==0 and cycle.status=="Waiting for external power")
             charge=true;step();assert(#commands==1 and commands[1]=="raise")
         """)
 
     def test_stopping_during_delay_requires_a_new_confirmation_after_restart(self):
         self.lua.execute("""
-            catch.weight=29.9;step(12);cycle:setEnabled(cabinet,false)
-            step(20);assert(#commands==0)
-            cycle:setEnabled(cabinet,true);step();step(12);assert(#commands==0)
+            catch.weight=29.9;step(nearFullWaitPolls);cycle:setEnabled(cabinet,false)
+            step(nearFullWaitPolls+8);assert(#commands==0)
+            cycle:setEnabled(cabinet,true);step();step(nearFullWaitPolls);assert(#commands==0)
             step();assert(#commands==1 and commands[1]=="raise")
         """)
 
@@ -274,7 +284,7 @@ class AutomationTest(AutomationFixture):
             step(4);assert(#commands==1 and moved==0)
             step();assert(#commands==2 and commands[2]=="lower")
             net.FullyRaised=false;net.NetDropped=true;switch.on=true;catch.ready=false
-            catch.weight=6;step(20)
+            catch.weight=6;step(nearFullWaitPolls+8)
             assert(#commands==2 and catch.remaining==4 and cabinet.WinchAutomationEnabled)
             catch.freeKg=5;catch.space=true
             step();assert(#commands==3 and commands[3]=="raise")
@@ -304,10 +314,22 @@ class AutomationTest(AutomationFixture):
             assert(#commands==0)
         """)
 
-    def test_full_box_before_haul_and_physical_switch_override(self):
+    def test_full_net_hauls_immediately_and_stays_raised_with_full_cabinet(self):
         self.lua.execute("""
-            catch.weight=30;catch.space=false;step(13);assert(#commands==0)
-            catch.space=true;step();switch.on=false;net.NetDropped=false;step()
+            catch.weight=30;catch.freeKg=0;catch.space=false
+            step();assert(#commands==1 and commands[1]=="raise")
+            deck();step(20)
+            assert(#commands==1 and moved==0 and cycle.status=="Empty the cabinet")
+            catch.weight=0;catch.remaining=0
+            step(4);assert(#commands==1)
+            step();assert(#commands==2 and commands[2]=="lower")
+        """)
+
+    def test_physical_switch_override_after_automatic_raise(self):
+        self.lua.execute("""
+            catch.weight=30
+            step();assert(#commands==1 and commands[1]=="raise")
+            switch.on=false;net.NetDropped=false;step()
             switch.on=true;net.NetDropped=true;step()
             assert(not cabinet.WinchAutomationEnabled and #commands==1 and used[#used]=="off")
             step(5);assert(#commands==1)
@@ -315,7 +337,7 @@ class AutomationTest(AutomationFixture):
 
     def test_stock_lever_raise_waits_for_drawer_without_sending_another_raise(self):
         self.lua.execute("""
-            catch.weight=30;step(12)
+            catch.weight=29.9;step(nearFullWaitPolls)
             switch.on=false;step(20)
             assert(cabinet.WinchAutomationEnabled and not cycle.haulCheck and #commands==0 and moved==0)
             net.NetDropped=false;net.FullyRaised=true;step(4)
@@ -352,7 +374,7 @@ class AutomationTest(AutomationFixture):
                 switch.on=false;net.NetDropped=false
                 return true
             end
-            catch.weight=30;step(13);switch.on=true;net.NetDropped=true
+            catch.weight=30;step();switch.on=true;net.NetDropped=true
             step(20);assert(not cabinet.WinchAutomationEnabled and #commands==1)
         """)
 
@@ -383,5 +405,5 @@ class AutomationTest(AutomationFixture):
             cabinet.WinchAutomationEnabled=false;catch.weight=30;step(6)
             assert(#commands==0 and #used==6 and cycle.drawKW==0)
             for _,mode in ipairs(used) do assert(mode=="off") end
-            cycle:setEnabled(cabinet,true);step(14);assert(#commands==1)
+            cycle:setEnabled(cabinet,true);step(2);assert(#commands==1)
         """)

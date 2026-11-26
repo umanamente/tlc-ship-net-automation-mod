@@ -446,10 +446,10 @@ class FitTests(unittest.TestCase):
             end
             data[lever].TurnON=function() lowers=lowers+1;leverOn=true end
             data[net].FullyRaised=false
-            catch={space=true,ready=false,remaining=2,status="available"}
+            catch={weight=29.9,space=true,freeKg=50,ready=false,remaining=2,status="available"}
             package.loaded["shipnet.automation_cargo"]={
-                weight=function() return 29.9,30 end,
-                storageFreeWeight=function() return 50 end,
+                weight=function() return catch.weight,30 end,
+                storageFreeWeight=function() return catch.freeKg end,
                 inspect=function() return catch end,
                 unload=function()
                     assert(net.FullyRaised and catch.ready and catch.remaining>0)
@@ -471,12 +471,28 @@ class FitTests(unittest.TestCase):
             poll(2)
         """)
 
+    def test_net_filling_during_confirmation_raises_on_the_next_poll(self):
+        self.start_panel_cycle()
+        self.lua.execute("""
+            local deadline=fit.cycle.haulCheck.dueAt
+            catch.space=false;catch.freeKg=0
+            poll(8)
+            assert(raises==0 and os.time()+.25<deadline)
+            catch.weight=30
+            poll()
+            assert(raises==1 and not fit.cycle.haulCheck)
+        """)
+
     def test_missing_winch_lever_interrupts_the_haul_wait(self):
         self.start_panel_cycle()
         self.lua.execute("""
+            local deadline=fit.cycle.haulCheck.dueAt
             poll(10)
             data[lever].invalid=true;poll(8)
-            data[lever].invalid=false;poll(12)
+            data[lever].invalid=false;poll()
+            local newDeadline=fit.cycle.haulCheck.dueAt
+            assert(newDeadline>deadline)
+            while os.time()+.25<newDeadline do poll() end
             assert(raises==0 and preview.WinchAutomationEnabled)
             poll();assert(raises==1)
         """)
