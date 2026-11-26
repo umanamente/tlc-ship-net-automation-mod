@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.2.1 (2026-11-26)
+
+### Bug Fixes
+
+* haul full nets even when the cabinet is full ([69540ed](https://github.com/umanamente/tlc-ship-net-automation-mod/commit/69540ede4fc87759fa8ab35fc1e83b8f23d13799))
+
+<!-- game-builds:start -->
+
+> **Built and tested on** ✅ `0.10.0.653173` (BuildID `25982825`)
+
+<!-- game-builds:end -->
+
 ## 0.2.0 (2026-11-25)
 
 ### Features

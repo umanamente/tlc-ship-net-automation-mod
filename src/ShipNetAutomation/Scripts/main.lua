@@ -13,7 +13,7 @@ local built_controller = require("shipnet.built_controller")
 local source = debug.getinfo(1, "S").source:gsub("\\", "/")
 local dir = assert(source:match("^@(.*)/Scripts/main%.lua$"), "ShipNetAutomation must run under Scripts/")
 local poll_ms = 250
-local version = "0.2.0"
+local version = "0.2.1"
 local build = game_version.steam_build(dir)
 local installed_game_version
 local version_attempts = 0
